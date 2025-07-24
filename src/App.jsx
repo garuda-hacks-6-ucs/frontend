@@ -1,33 +1,30 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import './App.css';
+import React from "react";
+import Content from "./Content";
+import { darkTheme, defaultConfig, XellarKitProvider } from "@xellar/kit";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { WagmiProvider } from "wagmi";
+import { optimismSepolia } from "viem/chains";
 
-import Navbar from './components/NavBar';
-import Footer from './components/Footer';
-import HomePage from './pages/Homepage';
-import VotingListPage from './pages/VotingListPage';
-import VotingDetailPage from './pages/VotingDetailPage';
-import VendorDetailView from './pages/VendorDetailPage';
+export const config = defaultConfig({
+  appName: "BlockTenderID",
+  walletConnectProjectId: import.meta.env.VITE_REOWN_PROJECT_ID,
+  xellarAppId: import.meta.env.VITE_XELLAR_APP_ID,
+  xellarEnv: "sandbox",
+  chains: [optimismSepolia],
+});
 
-const App = () => {
+const queryClient = new QueryClient();
+
+function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/voting" element={<VotingListPage />} />
-          <Route path="/voting/:id" element={<VotingDetailPage />} />
-          <Route path="/voting/:id" element={<VotingDetailPage />} />
-          <Route path="/voting/:id/vendor/:vendorId" element={<VendorDetailView />} />
-
-        </Routes>
-
-        <Footer />
-      </div>
-    </Router>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <XellarKitProvider theme={darkTheme}>
+          <Content />
+        </XellarKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
-};
+}
 
 export default App;
