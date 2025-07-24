@@ -9,14 +9,15 @@ import {
   Users,
   Trophy,
 } from "lucide-react";
-import mockVotingData from "../data/mockVotingData";
-import mockVendorData from "../data/mockVendorData";
-import { getCountdown } from "../utils/TimeUtils";
 import {
   governmentProposal,
   governmentProposalState,
 } from "../services/proposal";
-import { getGovernmentProposal } from "../server/proposal";
+import {
+  getGovernmentProposal,
+  getVendorProfile,
+  getVendorProposal,
+} from "../server/proposal";
 import { formatEther } from "viem";
 import { convertStatus, formatDeadline, statusColors } from "../utils/helper";
 
@@ -40,6 +41,36 @@ const VotingDetailPage = ({ address }) => {
     setVoting(proposal);
   };
 
+  const fetchVendor = async () => {
+    const _vendors = await getVendorProposal(voting.ID);
+
+    const enrichedVendors = await Promise.all(
+      _vendors.map(async (vendor) => {
+        const profile = await getVendorProfile(vendor.VendorWallet);
+        const vendorName = getCompanyName(profile.Details);
+        const vendorImages = getVendorImages(profile.Details);
+        return {
+          ...vendor,
+          vendorName,
+        };
+      })
+    );
+    console.log("enriched vendors", enrichedVendors);
+    setVendors(enrichedVendors);
+  };
+
+  const getCompanyName = (details) => {
+    if (!Array.isArray(details)) return "Unknown Company";
+    const company = details.find((item) => item.Key === "company_name");
+    return company ? company.Value : "Unknown Company";
+  };
+
+  const getVendorImages = (details) => {
+    if (!Array.isArray(details)) return "Unknown Company";
+    const company = details.find((item) => item.Key === "company_name");
+    return company ? company.Value : "Unknown Company";
+  };
+
   const fetchCountdown = async () => {
     const government = await governmentProposal(voting.ID);
     console.log(government);
@@ -61,6 +92,7 @@ const VotingDetailPage = ({ address }) => {
   useEffect(() => {
     if (voting && status >= 0) {
       fetchCountdown();
+      fetchVendor();
     }
   }, [status, voting, id]);
 
@@ -112,7 +144,7 @@ const VotingDetailPage = ({ address }) => {
         <div className="lg:col-span-2">
           <div className="mb-6">
             <img
-              src={voting.Images[currentImageIndex]}
+              src={voting.Images[0]}
               alt={voting.title}
               className="w-full h-96 object-cover rounded-2xl shadow-lg"
             />
@@ -228,7 +260,7 @@ const VotingDetailPage = ({ address }) => {
             return (
               <div
                 key={vendor.id}
-                onClick={() => navigate(`/voting/${id}/vendor/${vendor.id}`)}
+                onClick={() => navigate(`/voting/${id}/vendor/${vendor.ID}`)}
                 className={`relative border rounded-xl p-6 cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 
                                     ${
                                       isWinner
@@ -258,7 +290,7 @@ const VotingDetailPage = ({ address }) => {
                 </div>
 
                 <img
-                  src={vendor.thumbnail}
+                  src={vendor.Images[0]}
                   alt={vendor.title}
                   className="w-full h-48 object-cover rounded-lg mb-4 shadow-sm"
                 />
@@ -266,7 +298,7 @@ const VotingDetailPage = ({ address }) => {
                 <div className="space-y-3">
                   <div>
                     <h4 className="font-bold text-lg text-purple-800 line-clamp-2 leading-tight">
-                      {vendor.title}
+                      {vendor.ProposalName}
                     </h4>
                     <p className="text-sm text-gray-500 mt-1">
                       by {vendor.vendorName}
@@ -284,7 +316,7 @@ const VotingDetailPage = ({ address }) => {
 
                     <div className="text-right">
                       <p className="text-lg font-bold text-purple-900">
-                        {vendor.budget} ETH
+                        {formatEther(vendor.RequestedBudgetWei)} ETH
                       </p>
                     </div>
                   </div>
