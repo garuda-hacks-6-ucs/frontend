@@ -12,7 +12,7 @@ const Navbar = () => {
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <Link to="/">
-                <h1 className="text-2xl font-bold text-purple-900">TenderChain</h1>
+                <h1 className="text-2xl font-bold text-purple-900">BlocTenderId</h1>
               </Link>
             </div>
           </div>
