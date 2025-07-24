@@ -7,6 +7,7 @@ import Footer from './components/Footer';
 import HomePage from './pages/Homepage';
 import VotingListPage from './pages/VotingListPage';
 import VotingDetailPage from './pages/VotingDetailPage';
+import VendorDetailView from './pages/VendorDetailPage';
 
 const App = () => {
   return (
@@ -18,6 +19,9 @@ const App = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="/voting" element={<VotingListPage />} />
           <Route path="/voting/:id" element={<VotingDetailPage />} />
+          <Route path="/voting/:id" element={<VotingDetailPage />} />
+          <Route path="/voting/:id/vendor/:vendorId" element={<VendorDetailView />} />
+
         </Routes>
 
         <Footer />
