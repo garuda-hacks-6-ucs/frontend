@@ -3,20 +3,18 @@ import { useNavigate } from "react-router-dom";
 import mockVotingData from "../data/mockVotingData";
 import VotingCard from "../components/VotingCard";
 import { Filter, Vote } from "lucide-react";
-import getCountdown from "../utils/TimeUtils";
-import { getGovernmentProposal } from "../server/proposal";
+import { getGovernmentProposal, getProfiles } from "../server/proposal";
 
 const VotingListPage = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [votings, setVotings] = useState([]);
-  const [proposals, setProposals] = useState([]);
   const navigate = useNavigate();
 
   const fetchGovernmentProposal = async () => {
     const proposals = await getGovernmentProposal();
     if (!proposals) return;
-    console.log(proposals)
+    console.log(proposals);
 
     setVotings(proposals);
   };

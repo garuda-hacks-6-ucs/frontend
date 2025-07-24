@@ -1,8 +1,8 @@
-const getCountdown = (deadline) => {
+export const getCountdown = (deadline) => {
   const now = Date.now();
   const distance = deadline - now;
 
-  if (distance <= 0) return 'Expired';
+  if (distance <= 0) return "Expired";
 
   const days = Math.floor(distance / (1000 * 60 * 60 * 24));
   const hours = Math.floor((distance / (1000 * 60 * 60)) % 24);
@@ -11,5 +11,3 @@ const getCountdown = (deadline) => {
 
   return `${days}d ${hours}h ${minutes}m ${seconds}s`;
 };
-
-export default getCountdown;

@@ -11,9 +11,16 @@ import {
 } from "lucide-react";
 import mockVotingData from "../data/mockVotingData";
 import mockVendorData from "../data/mockVendorData";
-import getCountdown from "../utils/TimeUtils";
+import { getCountdown } from "../utils/TimeUtils";
+import {
+  governmentProposal,
+  governmentProposalState,
+} from "../services/proposal";
+import { getGovernmentProposal } from "../server/proposal";
+import { formatEther } from "viem";
+import { convertStatus, formatDeadline, statusColors } from "../utils/helper";
 
-const VotingDetailPage = () => {
+const VotingDetailPage = ({ address }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [voting, setVoting] = useState(null);
@@ -22,82 +29,58 @@ const VotingDetailPage = () => {
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [votedVendorId, setVotedVendorId] = useState(null);
   const [winningVendorId, setWinningVendorId] = useState(null);
+  const [deadline, setDeadline] = useState(0);
+
+  const [status, setStatus] = useState(null);
+
+  const fetchProposal = async () => {
+    const proposals = await getGovernmentProposal();
+    const proposal = proposals.find((item) => item.ID === String(id));
+    console.log(proposal);
+    setVoting(proposal);
+  };
+
+  const fetchCountdown = async () => {
+    const government = await governmentProposal(voting.ID);
+    console.log(government);
+    console.log(status);
+    let targetTime;
+
+    if (status === 0) {
+      targetTime = Number(government.vendorSubmissionStart) * 1000;
+    } else if (status === 1) {
+      targetTime = Number(government.voteStart) * 1000;
+    } else if (status === 2) {
+      targetTime = Number(government.voteEnd) * 1000;
+    }
+    console.log(status);
+
+    setDeadline(targetTime);
+  };
 
   useEffect(() => {
-    const data = mockVotingData.find((v) => v.id === parseInt(id));
-    if (!data) return;
-
-    const isExpired = data.deadline < Date.now();
-    const votingData = {
-      ...data,
-      status: isExpired ? "expired" : "voting",
-    };
-    setVoting(votingData);
-
-    if (!isExpired) {
-      const interval = setInterval(() => {
-        const now = Date.now();
-        const remaining = data.deadline - now;
-
-        if (remaining <= 0) {
-          const expiredData = {
-            ...data,
-            status: "expired",
-            countdown: "Expired",
-          };
-          setVoting(expiredData);
-
-          const relatedVendors = mockVendorData.filter(
-            (vendor) => vendor.projectVotingId === parseInt(id)
-          );
-
-          if (relatedVendors.length > 0) {
-            const winner = relatedVendors.reduce((prev, curr) =>
-              curr.voteCount > prev.voteCount ? curr : prev
-            );
-            setWinningVendorId(winner.id);
-          }
-
-          clearInterval(interval);
-        } else {
-          setVoting((prev) => ({
-            ...prev,
-            countdown: getCountdown(data.deadline),
-          }));
-        }
-      }, 1000);
-
-      return () => clearInterval(interval);
-    } else {
-      setVoting((prev) => ({
-        ...prev,
-        countdown: "Expired",
-      }));
-
-      const relatedVendors = mockVendorData.filter(
-        (vendor) => vendor.projectVotingId === parseInt(id)
-      );
-
-      if (relatedVendors.length > 0) {
-        const winner = relatedVendors.reduce((prev, curr) =>
-          curr.voteCount > prev.voteCount ? curr : prev
-        );
-        setWinningVendorId(winner.id);
-      }
+    if (voting && status >= 0) {
+      fetchCountdown();
     }
-  }, [id]);
+  }, [status, voting, id]);
+
+  useEffect(() => {
+    if (voting) {
+      fetchProposalState();
+    }
+  }, [voting]);
 
   useEffect(() => {
     if (id) {
-      const projectVendors = mockVendorData.filter(
-        (vendor) => vendor.projectVotingId === parseInt(id)
-      );
-      const sortedVendors = projectVendors.sort(
-        (a, b) => b.voteCount - a.voteCount
-      );
-      setVendors(sortedVendors);
+      console.log(id);
+      fetchProposal();
     }
   }, [id]);
+
+  const fetchProposalState = async () => {
+    const state = await governmentProposalState(voting.ID);
+    setStatus(state);
+  };
 
   if (!voting) {
     return (
@@ -129,13 +112,13 @@ const VotingDetailPage = () => {
         <div className="lg:col-span-2">
           <div className="mb-6">
             <img
-              src={voting.images[currentImageIndex]}
+              src={voting.Images[currentImageIndex]}
               alt={voting.title}
               className="w-full h-96 object-cover rounded-2xl shadow-lg"
             />
           </div>
           <div className="grid grid-cols-3 gap-4 mb-8">
-            {voting.images.map((img, index) => (
+            {voting.Images.map((img, index) => (
               <div
                 key={index}
                 className={`rounded-lg overflow-hidden border transition-all duration-200 cursor-pointer ${
@@ -166,22 +149,16 @@ const VotingDetailPage = () => {
 
         <div className="space-y-6">
           <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-100">
-            <div className="mb-6">
-              <span
-                className={`px-4 py-2 rounded-full text-sm font-semibold ${
-                  voting.status === "voting"
-                    ? "bg-green-500 text-white"
-                    : "bg-red-500 text-white"
-                }`}
-              >
-                {voting.status === "voting"
-                  ? "Voting Active"
-                  : "Voting Expired"}
-              </span>
+            <div
+              className={`mb-6 ${statusColors(status).text} ${
+                statusColors(status).bg
+              } rounded-lg p-2 max-w-38 text-center`}
+            >
+              {convertStatus(status)}
             </div>
 
             <h1 className="text-3xl font-bold text-purple-900 mb-4">
-              {voting.title}
+              {voting.ProjectName}
             </h1>
 
             <div className="space-y-4">
@@ -189,7 +166,9 @@ const VotingDetailPage = () => {
                 <Briefcase className="w-5 h-5 text-gray-500" />
                 <div>
                   <p className="text-sm text-gray-500">Agency</p>
-                  <p className="font-semibold text-gray-900">{voting.agency}</p>
+                  <p className="font-semibold text-gray-900">
+                    {"Kementerian Komunikasi dan Informatika"}
+                  </p>
                 </div>
               </div>
 
@@ -198,24 +177,22 @@ const VotingDetailPage = () => {
                 <div>
                   <p className="text-sm text-gray-500">Budget</p>
                   <p className="font-bold text-2xl text-purple-900">
-                    {voting.budget} ETH
+                    {formatEther(voting.BudgetWei)} ETH
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center gap-3">
                 <Clock className="w-5 h-5 text-gray-500" />
-                <div>
-                  <p className="text-sm text-gray-500">Time Remaining</p>
-                  <p
-                    className={`font-semibold ${
-                      voting.status === "voting"
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {voting.countdown}
-                  </p>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 flex items-center gap-1">
+                    {status == 0 && `Accepting vendor start at: `}
+                    {status == 1 && `Vote start at: `}
+                    {status == 2 && `Vote end at: `}
+                  </span>
+                  <span className="ml-1">
+                    {formatDeadline(parseInt(deadline))}
+                  </span>
                 </div>
               </div>
             </div>
@@ -227,7 +204,7 @@ const VotingDetailPage = () => {
             </h3>
             <button className="w-full bg-yellow-500 text-white py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors duration-200 flex items-center justify-center gap-2">
               <Download className="w-4 h-4" />
-              Download Proposal ({voting.proposalFile})
+              Download Proposal
             </button>
           </div>
         </div>

@@ -10,7 +10,7 @@ export function truncate(text, startChar, endChar, maxLength) {
   return text;
 }
 
-export function status(state) {
+export function convertStatus(state) {
   if (state == 0) {
     return "Pending";
   } else if (state == 1) {
@@ -45,3 +45,16 @@ export function statusColors(state) {
     };
   }
 }
+
+export const formatDeadline = (timestamp) => {
+  if (!timestamp) return "Loading...";
+  const date = new Date(timestamp);
+  const options = {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  };
+  return date.toLocaleString("en-US", options);
+};
