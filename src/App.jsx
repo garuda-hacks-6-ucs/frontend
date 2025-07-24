@@ -1,41 +1,29 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import './App.css';
 
-function App() {
-  const [count, setCount] = useState(0)
+import Navbar from './components/NavBar';
+import Footer from './components/Footer';
+import HomePage from './pages/Homepage';
+import VotingListPage from './pages/VotingListPage';
+import VotingDetailPage from './pages/VotingDetailPage';
 
+const App = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 text-gray-800 font-sans">
-      <div className="flex space-x-4 mb-6">
-        <a href="https://vite.dev" target="_blank" rel="noopener noreferrer">
-          <img src={viteLogo} className="h-24 w-24 hover:scale-110 transition-transform" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank" rel="noopener noreferrer">
-          <img src={reactLogo} className="h-24 w-24 hover:scale-110 transition-transform" alt="React logo" />
-        </a>
+    <Router>
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/voting" element={<VotingListPage />} />
+          <Route path="/voting/:id" element={<VotingDetailPage />} />
+        </Routes>
+
+        <Footer />
       </div>
+    </Router>
+  );
+};
 
-      <h1 className="text-4xl font-bold mb-4">Vite + React + Tailwind</h1>
-
-      <div className="bg-white p-6 rounded-xl shadow-md text-center space-y-4">
-        <button
-          onClick={() => setCount((count) => count + 1)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          count is {count}
-        </button>
-        <p className="text-sm text-gray-500">
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-
-      <p className="mt-6 text-sm text-gray-500">
-        Click on the Vite and React logos to learn more
-      </p>
-    </div>
-  )
-}
-
-export default App
+export default App;
