@@ -1,5 +1,3 @@
-// src/pages/VendorDetailPage.js
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import mockVendorData from '../data/mockVendorData';
