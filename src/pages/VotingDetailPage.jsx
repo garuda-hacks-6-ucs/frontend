@@ -12,6 +12,8 @@ import {
 import {
   governmentProposal,
   governmentProposalState,
+  vendorProposal,
+  vendorSelectionVoteHistory,
 } from "../services/proposal";
 import {
   getGovernmentProposal,
@@ -43,19 +45,30 @@ const VotingDetailPage = ({ address }) => {
 
   const fetchVendor = async () => {
     const _vendors = await getVendorProposal(voting.ID);
+    console.log("Raw vendors", _vendors);
 
     const enrichedVendors = await Promise.all(
       _vendors.map(async (vendor) => {
         const profile = await getVendorProfile(vendor.VendorWallet);
         const vendorName = getCompanyName(profile.Details);
+
+        const contractProposal = await vendorProposal(voting.ID, vendor.ID);
+        const totalVotes = Number(contractProposal.totalVotes);
+
         return {
           ...vendor,
           vendorName,
+          totalVotes,
         };
       })
     );
-    console.log("enriched vendors", enrichedVendors);
-    setVendors(enrichedVendors);
+
+    const sortedVendors = enrichedVendors.sort(
+      (a, b) => b.totalVotes - a.totalVotes
+    );
+
+    console.log("Sorted vendors", sortedVendors);
+    setVendors(sortedVendors);
   };
 
   const getCompanyName = (details) => {
@@ -208,7 +221,7 @@ const VotingDetailPage = ({ address }) => {
               </div>
 
               <div className="flex items-center justify-center gap-3">
-                <Clock className="w-5 h-5 text-gray-500" />
+                {status != 3 && <Clock className="w-5 h-5 text-gray-500" />}
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 flex items-center gap-1">
                     {status == 0 && `Accepting vendor start at: `}
@@ -252,9 +265,9 @@ const VotingDetailPage = ({ address }) => {
 
             return (
               <div
-                key={vendor.id}
+                key={vendor.ID}
                 onClick={() => {
-                  console.log(vendor.ID)
+                  console.log(vendor.ID);
                   navigate(`/voting/${String(id)}/vendor/${vendor.ID}`);
                 }}
                 className={`relative border rounded-xl p-6 cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 
@@ -305,8 +318,8 @@ const VotingDetailPage = ({ address }) => {
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-gray-400" />
                       <span className="text-sm font-medium text-gray-600">
-                        {vendors.length - index - 1} vote
-                        {vendors.length - index - 1 !== 1 ? "s" : ""}
+                        {vendor.totalVotes} vote
+                        {vendor.totalVotes !== 1 ? "s" : ""}
                       </span>
                     </div>
 

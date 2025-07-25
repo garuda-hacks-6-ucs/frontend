@@ -24,6 +24,12 @@ const Navbar = ({ address }) => {
           <div className="hidden md:block">
             <div className="ml-10 flex justify-center items-center space-x-8">
               <Link
+                to="/register"
+                className="text-purple-900 hover:text-yellow-500 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+              >
+                Register
+              </Link>
+              <Link
                 to="/"
                 className="text-purple-900 hover:text-yellow-500 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
               >
