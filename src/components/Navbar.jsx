@@ -18,7 +18,7 @@ const Navbar = ({ address }) => {
               <Link to="/" className="flex flex-row gap-2">
                 <img src={logo} className="h-8 w-8" />
                 <h1 className="text-2xl font-bold text-purple-900">
-                  BlocTenderId
+                  BlocTenderID
                 </h1>
               </Link>
             </div>

@@ -23,8 +23,13 @@ import { formatEther } from "viem";
 import {
   governmentProposal,
   governmentProposalState,
+  proposalDeadline,
+  proposalSnapshot,
+  proposalVotes,
+  state,
   vendorProposal,
   vendorSelectionVoteHistory,
+  voteDeliveredWork,
   voteVendorProposal,
   winnerVendor,
 } from "../services/proposal";
@@ -54,6 +59,10 @@ const VendorDetailPage = ({ address }) => {
   const [countdownStarted, setCountdownStarted] = useState(false);
   const [finalizedVoting, setFinalizedVoting] = useState(true);
   const [isWinner, setIsWinner] = useState(false);
+  const [voteDeadline, setVoteDeadline] = useState("");
+
+  const [totalForVotes, setTotalForVotes] = useState(0);
+  const [totalAgainstVotes, setTotalAgainstVotes] = useState(0);
 
   const fetchDescriptionFromAI = async () => {
     Swal.fire({
@@ -81,6 +90,22 @@ const VendorDetailPage = ({ address }) => {
     }
   };
 
+  const fetchState = async () => {
+    const _state = await state();
+    console.log(_state);
+  };
+
+  const fetchProposalSnapshot = async () => {
+    const snapshot = await proposalSnapshot();
+    console.log(snapshot);
+  };
+
+  const fetchProposalDeadline = async () => {
+    const deadline = await proposalDeadline();
+    console.log(deadline);
+    setVoteDeadline(deadline);
+  };
+
   const fetchVoteHistory = async () => {
     const history = await vendorSelectionVoteHistory(address);
     console.log(history);
@@ -101,6 +126,12 @@ const VendorDetailPage = ({ address }) => {
   const fetchProposalState = async () => {
     const state = await governmentProposalState(String(id));
     setVotingStatus(state);
+  };
+
+  const fetchProposalVotes = async () => {
+    const [againstVotes, forVotes] = await proposalVotes();
+    setTotalAgainstVotes(Number(againstVotes / BigInt(1e18)));
+    setTotalForVotes(Number(forVotes / BigInt(1e18)));
   };
 
   const fetchCountdown = async () => {
@@ -135,6 +166,10 @@ const VendorDetailPage = ({ address }) => {
     }
     if (votingStatus == 3) {
       fetchWinner();
+      fetchState();
+      fetchProposalSnapshot();
+      fetchProposalDeadline();
+      fetchProposalVotes();
     }
     fetchDescriptionFromAI();
   }, [votingStatus, id, vendorId]);
@@ -211,8 +246,39 @@ const VendorDetailPage = ({ address }) => {
     }
   };
 
-  const handleCommunityVote = (vote) => {
-    setCommunityVotes((prev) => [...prev, vote]);
+  const handleVote = async (vote) => {
+    try {
+      Swal.fire({
+        title: "Submitting your vote...",
+        text: "Please wait a moment.",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
+      const result = await voteDeliveredWork(vote, "A");
+
+      if (result) {
+        Swal.close();
+        await Swal.fire({
+          icon: "success",
+          title: "Vote submitted!",
+          text: `You have ${vote === 1 ? "agreed" : "disagreed"} successfully.`,
+          timer: 3000,
+          showConfirmButton: false,
+        });
+        navigate(`/voting`);
+      }
+      // Jika sukses
+    } catch (error) {
+      Swal.close();
+      await Swal.fire({
+        icon: "error",
+        title: "Voting failed",
+        text: error?.message || "Something went wrong during the vote.",
+      });
+    }
   };
 
   const handleWithdraw = () => {
@@ -356,14 +422,14 @@ const VendorDetailPage = ({ address }) => {
 
                 <div className="flex gap-4 mb-6">
                   <button
-                    onClick={() => handleCommunityVote("yes")}
+                    onClick={() => handleVote(1)}
                     className="flex-1 bg-green-500 text-white py-4 px-6 rounded-xl font-semibold hover:bg-green-600 transition-colors duration-200 flex items-center justify-center gap-2"
                   >
                     <CheckCircle className="w-5 h-5" />
                     Agree
                   </button>
                   <button
-                    onClick={() => handleCommunityVote("no")}
+                    onClick={() => handleVote(0)}
                     className="flex-1 bg-red-500 text-white py-4 px-6 rounded-xl font-semibold hover:bg-red-600 transition-colors duration-200 flex items-center justify-center gap-2"
                   >
                     <XCircle className="w-5 h-5" />
@@ -384,7 +450,7 @@ const VendorDetailPage = ({ address }) => {
                     <div>
                       <p className="text-sm text-gray-500 font-medium">Agree</p>
                       <p className="text-2xl font-bold text-green-600">
-                        {communityVotes.filter((v) => v === "yes").length}
+                        {totalForVotes}
                       </p>
                     </div>
                     <div>
@@ -392,18 +458,18 @@ const VendorDetailPage = ({ address }) => {
                         Disagree
                       </p>
                       <p className="text-2xl font-bold text-red-600">
-                        {communityVotes.filter((v) => v === "no").length}
+                        {totalAgainstVotes}
                       </p>
                     </div>
                   </div>
 
-                  {countdownStarted && !finalizedVoting && (
+                  {votingStatus == 3 && voteDeadline && (
                     <div className="mt-4 text-center">
                       <div className="bg-blue-100 rounded-lg p-4">
                         <div className="flex items-center justify-center gap-2 text-blue-700">
                           <Clock className="w-5 h-5" />
                           <span className="font-semibold">
-                            Final result in {countdown} seconds...
+                            Vote will be end at {voteDeadline}.
                           </span>
                         </div>
                       </div>

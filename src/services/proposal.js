@@ -3,6 +3,7 @@ import { readContract, writeContract } from "wagmi/actions";
 import { config } from "../App";
 import block_tender from "../builds/block_tender.json";
 import { BLOCKTENDERID_ADDRESS } from "../data/address";
+import { getSnapshotDate } from "../utils/helper";
 
 export async function voteVendorProposal(
   governmentProposalId,
@@ -71,9 +72,9 @@ export async function deliverWork(
   }
 }
 
-export async function voteDeliveredWork(proposal, support, reason) {
+export async function voteDeliveredWork(support, reason) {
   try {
-    const proposalId = await getProposalId(proposal);
+    const proposalId = await getProposalId();
     const result = await writeContract(config, {
       abi: block_tender,
       address: BLOCKTENDERID_ADDRESS,
@@ -127,9 +128,9 @@ export async function execute(proposal) {
   }
 }
 
-export async function proposalVotes(proposal) {
+export async function proposalVotes() {
   try {
-    const proposalId = await getProposalId(proposal);
+    const proposalId = await getProposalId();
     const [totalAgainst, totalFor] = await readContract(config, {
       abi: block_tender,
       address: BLOCKTENDERID_ADDRESS,
@@ -143,17 +144,49 @@ export async function proposalVotes(proposal) {
   }
 }
 
-export async function getProposalId(proposal) {
+export async function proposalSnapshot() {
+  try {
+    const proposalId = await getProposalId();
+    const snapshot = await readContract(config, {
+      abi: block_tender,
+      address: BLOCKTENDERID_ADDRESS,
+      functionName: "proposalSnapshot",
+      args: [proposalId],
+    });
+    return getSnapshotDate(snapshot);
+  } catch (error) {
+    console.error(error);
+    return;
+  }
+}
+
+export async function proposalDeadline() {
+  try {
+    const proposalId = await getProposalId();
+    const deadline = await readContract(config, {
+      abi: block_tender,
+      address: BLOCKTENDERID_ADDRESS,
+      functionName: "proposalDeadline",
+      args: [proposalId],
+    });
+    return getSnapshotDate(deadline);
+  } catch (error) {
+    console.error(error);
+    return;
+  }
+}
+
+export async function getProposalId() {
   try {
     const proposalId = await readContract(config, {
       abi: block_tender,
       address: BLOCKTENDERID_ADDRESS,
       functionName: "getProposalId",
       args: [
-        proposal.sctargets,
-        proposal.scvalues,
-        proposal.sccalldatas,
-        keccak256(toUtf8Bytes(proposal.proposaldescription)),
+        ["0xC80626cEf7F0b3769911007A17FCB670f82910fB"],
+        ["100"],
+        ["0x"],
+        keccak256(toUtf8Bytes("hahah")),
       ],
     });
     return proposalId;
@@ -163,8 +196,9 @@ export async function getProposalId(proposal) {
   }
 }
 
-export async function state(proposalId) {
+export async function state() {
   try {
+    const proposalId = await getProposalId();
     const state = await readContract(config, {
       abi: block_tender,
       address: BLOCKTENDERID_ADDRESS,
