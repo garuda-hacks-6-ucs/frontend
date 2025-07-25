@@ -29,6 +29,10 @@ import {
   winnerVendor,
 } from "../services/proposal";
 import Swal from "sweetalert2";
+import {
+  getDescriptionAIProject,
+  getDescriptionAIProposal,
+} from "../utils/helper";
 
 const VendorDetailPage = ({ address }) => {
   const { id, vendorId } = useParams();
@@ -44,11 +48,38 @@ const VendorDetailPage = ({ address }) => {
   const [communityVotes, setCommunityVotes] = useState([]);
   const [canWithdraw, setCanWithdraw] = useState(true);
   const [winningVendorId, setWinningVendorId] = useState(null);
+  const [description, setDescription] = useState("");
 
   const [countdown, setCountdown] = useState(5);
   const [countdownStarted, setCountdownStarted] = useState(false);
   const [finalizedVoting, setFinalizedVoting] = useState(true);
   const [isWinner, setIsWinner] = useState(false);
+
+  const fetchDescriptionFromAI = async () => {
+    Swal.fire({
+      title: "AI still summarize your PDF...",
+      html: "Please wait a moment",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+      timer: 5000,
+      timerProgressBar: true,
+    });
+
+    try {
+      const result = await getDescriptionAIProposal(vendor);
+      setTimeout(() => {
+        setDescription(result);
+      }, 6000);
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Failed to fetch description",
+        text: error.message || "An error occurred while contacting the AI",
+      });
+    }
+  };
 
   const fetchVoteHistory = async () => {
     const history = await vendorSelectionVoteHistory(address);
@@ -105,6 +136,7 @@ const VendorDetailPage = ({ address }) => {
     if (votingStatus == 3) {
       fetchWinner();
     }
+    fetchDescriptionFromAI();
   }, [votingStatus, id, vendorId]);
 
   const fetchVendor = async () => {
@@ -227,7 +259,7 @@ const VendorDetailPage = ({ address }) => {
               Proposal Description
             </h3>
             <p className="text-gray-700 leading-relaxed text-lg">
-              {vendor.description}
+              {description}
             </p>
           </div>
 
@@ -453,7 +485,7 @@ const VendorDetailPage = ({ address }) => {
               className="w-full bg-yellow-500 text-white py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors duration-200 flex items-center justify-center gap-2"
             >
               <Download className="w-4 h-4" />
-              Download ({vendor.proposalFile})
+              Download
             </a>
           </div>
 

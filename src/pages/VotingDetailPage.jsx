@@ -16,12 +16,20 @@ import {
   vendorSelectionVoteHistory,
 } from "../services/proposal";
 import {
+  getAIDescription,
   getGovernmentProposal,
   getVendorProfile,
   getVendorProposal,
 } from "../server/proposal";
 import { formatEther } from "viem";
-import { convertStatus, formatDeadline, statusColors } from "../utils/helper";
+import {
+  convertStatus,
+  formatDeadline,
+  getDescriptionAIProject,
+  statusColors,
+} from "../utils/helper";
+import project from "../assets/file/project.pdf";
+import Swal from "sweetalert2";
 
 const VotingDetailPage = ({ address }) => {
   const { id } = useParams();
@@ -33,8 +41,8 @@ const VotingDetailPage = ({ address }) => {
   const [votedVendorId, setVotedVendorId] = useState(null);
   const [winningVendorId, setWinningVendorId] = useState(null);
   const [deadline, setDeadline] = useState(0);
-
   const [status, setStatus] = useState(null);
+  const [description, setDescription] = useState("");
 
   const fetchProposal = async () => {
     const proposals = await getGovernmentProposal();
@@ -95,6 +103,32 @@ const VotingDetailPage = ({ address }) => {
     setDeadline(targetTime);
   };
 
+  const fetchDescriptionFromAI = async () => {
+    Swal.fire({
+      title: "AI Still summarize your PDF...",
+      html: "Please wait a moment",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+      timer: 5000,
+      timerProgressBar: true,
+    });
+
+    try {
+      const result = await getDescriptionAIProject(project);
+      setTimeout(() => {
+        setDescription(result);
+      }, 6000);
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Failed to fetch description",
+        text: error.message || "An error occurred while contacting the AI",
+      });
+    }
+  };
+
   useEffect(() => {
     if (voting && status >= 0) {
       fetchCountdown();
@@ -112,6 +146,7 @@ const VotingDetailPage = ({ address }) => {
     if (id) {
       console.log(id);
       fetchProposal();
+      fetchDescriptionFromAI();
     }
   }, [id]);
 
@@ -180,7 +215,7 @@ const VotingDetailPage = ({ address }) => {
               Project AI Summary
             </h3>
             <p className="text-gray-700 leading-relaxed text-lg">
-              {voting.description}
+              {description}
             </p>
           </div>
         </div>
