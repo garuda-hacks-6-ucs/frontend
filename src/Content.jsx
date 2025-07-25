@@ -8,6 +8,7 @@ import HomePage from "./pages/Homepage";
 import VotingListPage from "./pages/VotingListPage";
 import VotingDetailPage from "./pages/VotingDetailPage";
 import VendorDetailView from "./pages/VendorDetailPage";
+import RegisterPage from "./pages/RegisterPage";
 import { useAccount } from "wagmi";
 
 const Content = () => {
@@ -30,6 +31,10 @@ const Content = () => {
           <Route
             path="/voting/:id/vendor/:vendorId"
             element={<VendorDetailView address={address} />}
+          />
+          <Route
+            path="/register"
+            element={<RegisterPage address={address} />}
           />
         </Routes>
 
