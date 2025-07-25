@@ -1,8 +1,7 @@
 import { keccak256, toUtf8Bytes } from "ethers";
-import { readContract } from "wagmi/actions";
+import { readContract, writeContract } from "wagmi/actions";
 import { config } from "../App";
 import block_tender from "../builds/block_tender.json";
-import { writeContract } from "viem/actions";
 import { BLOCKTENDERID_ADDRESS } from "../data/address";
 
 export async function voteVendorProposal(

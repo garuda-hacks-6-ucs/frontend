@@ -20,6 +20,14 @@ import {
   getVendorProposal,
 } from "../server/proposal";
 import { formatEther } from "viem";
+import {
+  governmentProposal,
+  governmentProposalState,
+  vendorProposal,
+  vendorSelectionVoteHistory,
+  voteVendorProposal,
+} from "../services/proposal";
+import Swal from "sweetalert2";
 
 const VendorDetailPage = ({ address }) => {
   const { id, vendorId } = useParams();
@@ -27,9 +35,9 @@ const VendorDetailPage = ({ address }) => {
   const navigate = useNavigate();
 
   const [vendor, setVendor] = useState(null);
-  const [votingStatus, setVotingStatus] = useState("voting");
-  const [hasVoted, setHasVoted] = useState(true);
-  const [role, setRole] = useState("community");
+  const [votingStatus, setVotingStatus] = useState(0);
+  const [hasVoted, setHasVoted] = useState(false);
+  const [role, setRole] = useState("vendor");
 
   const [proofFile, setProofFile] = useState("aaaa");
   const [communityVotes, setCommunityVotes] = useState([]);
@@ -39,62 +47,86 @@ const VendorDetailPage = ({ address }) => {
   const [countdown, setCountdown] = useState(5);
   const [countdownStarted, setCountdownStarted] = useState(false);
   const [finalizedVoting, setFinalizedVoting] = useState(true);
+  const [isWinner, setIsWinner] = useState(false);
 
-  const [isWinner, setIsWinner] = useState(true);
+  const fetchVoteHistory = async () => {
+    const history = await vendorSelectionVoteHistory(address);
+    console.log(history);
+    setHasVoted(
+      history.some(
+        (item) =>
+          item.governmentProposalUUID === String(id) &&
+          item.vendorProposalUUID === String(vendorId)
+      )
+    );
+  };
+
+  const fetchProposalState = async () => {
+    const state = await governmentProposalState(String(id));
+    setVotingStatus(state);
+  };
+
+  const fetchCountdown = async () => {
+    const government = await governmentProposal(String(id));
+    console.log(government);
+    let targetTime;
+
+    if (votingStatus === 0) {
+      targetTime = Number(government.vendorSubmissionStart) * 1000;
+    } else if (votingStatus === 1) {
+      targetTime = Number(government.voteStart) * 1000;
+    } else if (votingStatus === 2) {
+      targetTime = Number(government.voteEnd) * 1000;
+    }
+    console.log(votingStatus);
+
+    setCountdown(targetTime);
+  };
 
   useEffect(() => {
     setRole(
-      address === "0xC80626cEf7F0b3769911007A17FCB670f82910fB"
-        ? "vendor"
-        : "community"
+      address === "0xE5bD375E6F4650C13740b81A4e95F3b01836b5E0"
+        ? "community"
+        : "vendor"
     );
+    fetchProposalState();
   }, [id, vendorId]);
 
-  // useEffect(() => {
-  //   const currentVendor = mockVendorData.find(v => v.id === parseInt(vendorId));
-  //   const relatedVoting = mockVotingData.find(v => v.id === parseInt(id));
-
-  //   if (!currentVendor || !relatedVoting) {
-  //     navigate(`/voting/${id}`);
-  //     return;
-  //   }
-
-  //   setVendor(currentVendor);
-
-  //   const isExpired = relatedVoting.deadline < Date.now();
-  //   setVotingStatus(isExpired ? 'expired' : 'voting');
-
-  //   const relatedVendors = mockVendorData.filter(v => v.projectVotingId === parseInt(id));
-  //   if (relatedVendors.length > 0) {
-  //     const winner = relatedVendors.reduce((prev, curr) =>
-  //       curr.voteCount > prev.voteCount ? curr : prev
-  //     );
-  //     setWinningVendorId(winner.id);
-  //   }
-  // }, [id, vendorId, navigate]);
+  useEffect(() => {
+    if (id) {
+      fetchCountdown();
+    }
+  }, [votingStatus, id]);
 
   const fetchVendor = async () => {
     const _vendors = await getVendorProposal(String(id));
-
     const enrichedVendors = await Promise.all(
       _vendors.map(async (vendor) => {
         const profile = await getVendorProfile(vendor.VendorWallet);
         const vendorName = getCompanyName(profile.Details);
+
+        const contractProposal = await vendorProposal(
+          String(id),
+          String(vendorId)
+        );
+        const totalVotes = Number(contractProposal.totalVotes);
+
         return {
           ...vendor,
           vendorName,
+          totalVotes,
         };
       })
     );
+
     console.log(enrichedVendors);
 
-    // Temukan vendor yang cocok berdasarkan vendorId dari URL
     const matched = enrichedVendors.find(
-      (v) => String(v.ID) === String(vendorId) // ID atau field lain sesuai backend kamu
+      (v) => String(v.ID) === String(vendorId)
     );
     console.log(matched);
 
-    setIsWinner(true);
+    // setIsWinner(true);
 
     setVendor(matched || null);
     console.log("Matched vendor", matched);
@@ -106,14 +138,37 @@ const VendorDetailPage = ({ address }) => {
     return company ? company.Value : "Unknown Company";
   };
 
-  const handleVoteVendor = () => {
-    if (votingStatus === "voting") {
-      setVendor((prev) => ({
-        ...prev,
-        voteCount: prev.voteCount + 1,
-      }));
-      setHasVoted(true);
-      alert("Thank you for voting!");
+  const handleVoteVendor = async () => {
+    try {
+      Swal.fire({
+        title: "Submitting Vote...",
+        text: "Please wait while we record your vote.",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
+      const result = await voteVendorProposal(String(id), String(vendorId));
+      if (result) {
+        Swal.close();
+        await Swal.fire({
+          title: "Vote Submitted",
+          text: "Your vote has been successfully recorded.",
+          icon: "success",
+          confirmButtonText: "OK",
+        });
+        navigate(`/voting`);
+      }
+    } catch (error) {
+      console.error(error);
+      Swal.close();
+      await Swal.fire({
+        title: "Error",
+        text: "Something went wrong while voting.",
+        icon: "error",
+        confirmButtonText: "Close",
+      });
     }
   };
 
@@ -127,43 +182,17 @@ const VendorDetailPage = ({ address }) => {
     );
   };
 
-  // useEffect(() => {
-  //   if (proofFile && communityVotes.length > 0 && !countdownStarted) {
-  //     setCountdownStarted(true);
-  //     let seconds = 5;
-  //     setCountdown(seconds);
-
-  //     const interval = setInterval(() => {
-  //       setCountdown((prev) => {
-  //         if (prev <= 1) {
-  //           clearInterval(interval);
-
-  //           if (!finalizedVoting) {
-  //             const yesCount = communityVotes.filter((v) => v === "yes").length;
-  //             const noCount = communityVotes.filter((v) => v === "no").length;
-
-  //             setCanWithdraw(yesCount > noCount);
-  //             setFinalizedVoting(true);
-  //           }
-
-  //           return 0;
-  //         }
-  //         return prev - 1;
-  //       });
-  //     }, 1000);
-  //   }
-  // }, [proofFile, communityVotes, countdownStarted, finalizedVoting]);
-
   useEffect(() => {
     if (id && vendorId) {
       console.log(id);
       console.log(vendorId);
       fetchVendor();
+      fetchVoteHistory();
     }
   }, [vendorId, id]);
 
   if (!vendor) {
-    return <div>Loading vendor...</div>; // atau spinner
+    return <div>Loading vendor...</div>;
   }
 
   return (
@@ -196,7 +225,7 @@ const VendorDetailPage = ({ address }) => {
           </div>
 
           <div className="space-y-6 mb-8">
-            {votingStatus === "voting" && role === "vendor" && (
+            {votingStatus === 2 && role === "community" && (
               <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-gray-100">
                 <h3 className="text-lg font-bold text-purple-900 mb-4">
                   Cast Your Vote
@@ -261,7 +290,7 @@ const VendorDetailPage = ({ address }) => {
               )}
           </div>
 
-          {role === "community" && proofFile && (
+          {role === "community" && votingStatus === 3 && proofFile && (
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 shadow-lg border-2 border-blue-100">
               <h3 className="text-2xl font-bold text-blue-900 mb-6">
                 Community Verification
@@ -397,7 +426,9 @@ const VendorDetailPage = ({ address }) => {
                 <Users className="w-5 h-5 text-gray-500" />
                 <div>
                   <p className="text-sm text-gray-500">Total Votes</p>
-                  <p className="font-semibold text-gray-900">{1} vote</p>
+                  <p className="font-semibold text-gray-900">
+                    {vendor.totalVotes} vote
+                  </p>
                 </div>
               </div>
             </div>
