@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Menu, Wallet, X } from "lucide-react";
 import { truncate } from "../utils/helper";
 import { useConnectModal } from "@xellar/kit";
+import logo from "../assets/logo.png";
 
 const Navbar = ({ address }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -14,7 +15,8 @@ const Navbar = ({ address }) => {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <Link to="/">
+              <Link to="/" className="flex flex-row gap-2">
+                <img src={logo} className="h-8 w-8" />
                 <h1 className="text-2xl font-bold text-purple-900">
                   BlocTenderId
                 </h1>

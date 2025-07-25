@@ -26,6 +26,7 @@ import {
   vendorProposal,
   vendorSelectionVoteHistory,
   voteVendorProposal,
+  winnerVendor,
 } from "../services/proposal";
 import Swal from "sweetalert2";
 
@@ -59,6 +60,11 @@ const VendorDetailPage = ({ address }) => {
           item.vendorProposalUUID === String(vendorId)
       )
     );
+  };
+
+  const fetchWinner = async () => {
+    const winner = await winnerVendor(String(id));
+    setIsWinner(winner === String(vendorId));
   };
 
   const fetchProposalState = async () => {
@@ -96,7 +102,10 @@ const VendorDetailPage = ({ address }) => {
     if (id) {
       fetchCountdown();
     }
-  }, [votingStatus, id]);
+    if (votingStatus == 3) {
+      fetchWinner();
+    }
+  }, [votingStatus, id, vendorId]);
 
   const fetchVendor = async () => {
     const _vendors = await getVendorProposal(String(id));
@@ -125,8 +134,6 @@ const VendorDetailPage = ({ address }) => {
       (v) => String(v.ID) === String(vendorId)
     );
     console.log(matched);
-
-    // setIsWinner(true);
 
     setVendor(matched || null);
     console.log("Matched vendor", matched);
@@ -290,86 +297,89 @@ const VendorDetailPage = ({ address }) => {
               )}
           </div>
 
-          {role === "community" && votingStatus === 3 && proofFile && (
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 shadow-lg border-2 border-blue-100">
-              <h3 className="text-2xl font-bold text-blue-900 mb-6">
-                Community Verification
-              </h3>
+          {role === "community" &&
+            votingStatus === 3 &&
+            isWinner &&
+            proofFile && (
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 shadow-lg border-2 border-blue-100">
+                <h3 className="text-2xl font-bold text-blue-900 mb-6">
+                  Community Verification
+                </h3>
 
-              {/* Tombol View Proof */}
-              <div className="mb-6">
-                <a
-                  href={proofFile}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block bg-green-100 text-green-800 font-semibold px-4 py-2 rounded-lg shadow hover:bg-green-200 transition"
-                >
-                  📄 View proof
-                </a>
-              </div>
-
-              <p className="text-blue-800 mb-6 text-lg">
-                Do you agree the vendor has completed the project as proposed?
-              </p>
-
-              <div className="flex gap-4 mb-6">
-                <button
-                  onClick={() => handleCommunityVote("yes")}
-                  className="flex-1 bg-green-500 text-white py-4 px-6 rounded-xl font-semibold hover:bg-green-600 transition-colors duration-200 flex items-center justify-center gap-2"
-                >
-                  <CheckCircle className="w-5 h-5" />
-                  Agree
-                </button>
-                <button
-                  onClick={() => handleCommunityVote("no")}
-                  className="flex-1 bg-red-500 text-white py-4 px-6 rounded-xl font-semibold hover:bg-red-600 transition-colors duration-200 flex items-center justify-center gap-2"
-                >
-                  <XCircle className="w-5 h-5" />
-                  Disagree
-                </button>
-              </div>
-
-              <div className="bg-white rounded-xl p-6 border border-blue-200">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-sm text-gray-500 font-medium">
-                      Total Votes
-                    </p>
-                    <p className="text-2xl font-bold text-gray-800">
-                      {communityVotes.length}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 font-medium">Agree</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {communityVotes.filter((v) => v === "yes").length}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 font-medium">
-                      Disagree
-                    </p>
-                    <p className="text-2xl font-bold text-red-600">
-                      {communityVotes.filter((v) => v === "no").length}
-                    </p>
-                  </div>
+                {/* Tombol View Proof */}
+                <div className="mb-6">
+                  <a
+                    href={proofFile}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block bg-green-100 text-green-800 font-semibold px-4 py-2 rounded-lg shadow hover:bg-green-200 transition"
+                  >
+                    📄 View proof
+                  </a>
                 </div>
 
-                {countdownStarted && !finalizedVoting && (
-                  <div className="mt-4 text-center">
-                    <div className="bg-blue-100 rounded-lg p-4">
-                      <div className="flex items-center justify-center gap-2 text-blue-700">
-                        <Clock className="w-5 h-5" />
-                        <span className="font-semibold">
-                          Final result in {countdown} seconds...
-                        </span>
-                      </div>
+                <p className="text-blue-800 mb-6 text-lg">
+                  Do you agree the vendor has completed the project as proposed?
+                </p>
+
+                <div className="flex gap-4 mb-6">
+                  <button
+                    onClick={() => handleCommunityVote("yes")}
+                    className="flex-1 bg-green-500 text-white py-4 px-6 rounded-xl font-semibold hover:bg-green-600 transition-colors duration-200 flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle className="w-5 h-5" />
+                    Agree
+                  </button>
+                  <button
+                    onClick={() => handleCommunityVote("no")}
+                    className="flex-1 bg-red-500 text-white py-4 px-6 rounded-xl font-semibold hover:bg-red-600 transition-colors duration-200 flex items-center justify-center gap-2"
+                  >
+                    <XCircle className="w-5 h-5" />
+                    Disagree
+                  </button>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 border border-blue-200">
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <p className="text-sm text-gray-500 font-medium">
+                        Total Votes
+                      </p>
+                      <p className="text-2xl font-bold text-gray-800">
+                        {communityVotes.length}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 font-medium">Agree</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {communityVotes.filter((v) => v === "yes").length}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 font-medium">
+                        Disagree
+                      </p>
+                      <p className="text-2xl font-bold text-red-600">
+                        {communityVotes.filter((v) => v === "no").length}
+                      </p>
                     </div>
                   </div>
-                )}
+
+                  {countdownStarted && !finalizedVoting && (
+                    <div className="mt-4 text-center">
+                      <div className="bg-blue-100 rounded-lg p-4">
+                        <div className="flex items-center justify-center gap-2 text-blue-700">
+                          <Clock className="w-5 h-5" />
+                          <span className="font-semibold">
+                            Final result in {countdown} seconds...
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
 
         <div className="space-y-6">
