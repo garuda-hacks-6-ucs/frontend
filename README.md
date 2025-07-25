@@ -104,6 +104,29 @@ For collaboration, suggestions, or questions, feel free to reach out to the deve
 
 ---
 
+## 🧪 Getting Started
+
+To run the frontend locally:
+
+1. Clone the repository:
+   git clone https://github.com/garuda-hacks-6-ucs/frontend.git
+
+3. Navigate into the project directory: 
+   cd frontend
+
+5. Install dependencies
+   Make sure you have Node.js installed (preferably version 18 or later). Then run:
+   npm install
+
+7. Create a .env file
+   Create a .env file in the root of the frontend folder with any necessary environment variables. For example:
+   VITE_BACKEND_URL=http://localhost:3000
+
+9. Start the development server
+    npm run dev
+   By default, the frontend will be served at:
+   http://localhost:5173
+
 **© BlockTenderID – Empowering Transparency in Public Procurement**
 
 
