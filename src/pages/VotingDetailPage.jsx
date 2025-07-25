@@ -48,7 +48,6 @@ const VotingDetailPage = ({ address }) => {
       _vendors.map(async (vendor) => {
         const profile = await getVendorProfile(vendor.VendorWallet);
         const vendorName = getCompanyName(profile.Details);
-        const vendorImages = getVendorImages(profile.Details);
         return {
           ...vendor,
           vendorName,
@@ -60,12 +59,6 @@ const VotingDetailPage = ({ address }) => {
   };
 
   const getCompanyName = (details) => {
-    if (!Array.isArray(details)) return "Unknown Company";
-    const company = details.find((item) => item.Key === "company_name");
-    return company ? company.Value : "Unknown Company";
-  };
-
-  const getVendorImages = (details) => {
     if (!Array.isArray(details)) return "Unknown Company";
     const company = details.find((item) => item.Key === "company_name");
     return company ? company.Value : "Unknown Company";
@@ -223,7 +216,7 @@ const VotingDetailPage = ({ address }) => {
                     {status == 2 && `Vote end at: `}
                   </span>
                   <span className="ml-1">
-                    {formatDeadline(parseInt(deadline))}
+                    {status != 3 && formatDeadline(parseInt(deadline))}
                   </span>
                 </div>
               </div>
@@ -254,13 +247,16 @@ const VotingDetailPage = ({ address }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {vendors.map((vendor, index) => {
-            const isWinner = vendor.id === winningVendorId;
+            const isWinner = vendor.ID === winningVendorId;
             const rank = index + 1;
 
             return (
               <div
                 key={vendor.id}
-                onClick={() => navigate(`/voting/${id}/vendor/${vendor.ID}`)}
+                onClick={() => {
+                  console.log(vendor.ID)
+                  navigate(`/voting/${String(id)}/vendor/${vendor.ID}`);
+                }}
                 className={`relative border rounded-xl p-6 cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 
                                     ${
                                       isWinner
@@ -309,8 +305,8 @@ const VotingDetailPage = ({ address }) => {
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-gray-400" />
                       <span className="text-sm font-medium text-gray-600">
-                        {vendor.voteCount} vote
-                        {vendor.voteCount !== 1 ? "s" : ""}
+                        {vendors.length - index - 1} vote
+                        {vendors.length - index - 1 !== 1 ? "s" : ""}
                       </span>
                     </div>
 

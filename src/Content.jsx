@@ -28,12 +28,8 @@ const Content = () => {
             element={<VotingDetailPage address={address} />}
           />
           <Route
-            path="/voting/:id"
-            element={<VotingDetailPage address={address} />}
-          />
-          <Route
             path="/voting/:id/vendor/:vendorId"
-            element={<VendorDetailView />}
+            element={<VendorDetailView address={address} />}
           />
         </Routes>
 
