@@ -36,7 +36,7 @@ const Footer = () => {
           <div className="space-y-4">
             <h4 className="text-lg font-semibold">Contact</h4>
             <div className="space-y-2 text-purple-200">
-              <p>Email: info@tenderchain.com</p>
+              <p>Email: info@blocTenderId.com</p>
               <p>Phone: +62 21 1234 5678</p>
               <p>Address: Jakarta, Indonesia</p>
             </div>
@@ -47,7 +47,7 @@ const Footer = () => {
         
         <div className="flex flex-col md:flex-row justify-between items-center">
           <p className="text-purple-200">
-            © 2025 TenderChain. All rights reserved.
+            © 2025 BlocTenderID. All rights reserved.
           </p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <a href="#" className="text-purple-200 hover:text-yellow-400 transition-colors">Privacy Policy</a>
